@@ -1,11 +1,8 @@
 package main
 
 import (
-	"regexp"
 	"strings"
 )
-
-var errorFileRegex = regexp.MustCompile(`^(.*\.go:\d+:)(.*)`)
 
 type TestEntry struct {
 	Name         string
@@ -14,6 +11,7 @@ type TestEntry struct {
 	Action       string
 	Output       string
 	SubTests     []TestEntry
+	Logs         []string
 	NoTestFiles  bool
 	PkgFinished  bool
 	PkgHasErrors bool
@@ -33,4 +31,24 @@ func (t TestEntry) IsSubTest() bool {
 
 func (t TestEntry) IsPkg() bool {
 	return t.Name == ""
+}
+
+func (t TestEntry) TotalElapsed() float64 {
+	sum := t.Elapsed
+	for _, tt := range t.SubTests {
+		sum += tt.Elapsed
+	}
+
+	return sum
+}
+
+func (t *TestEntry) FilterSubTestsByAction(action string) []TestEntry {
+	result := []TestEntry{}
+	for _, tt := range t.SubTests {
+		if tt.Action == action {
+			result = append(result, tt)
+		}
+	}
+
+	return result
 }

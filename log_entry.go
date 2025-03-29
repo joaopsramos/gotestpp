@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type LogEntry struct {
+type TestEvent struct {
 	Time    time.Time
 	Action  string
 	Pkg     string `json:"Package"`
@@ -14,6 +14,6 @@ type LogEntry struct {
 	Elapsed float64
 }
 
-func (l LogEntry) buildID() string {
+func (l TestEvent) buildID() string {
 	return strings.Join([]string{l.Pkg, l.Name}, "-")
 }

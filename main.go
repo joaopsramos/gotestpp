@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -8,24 +9,16 @@ import (
 	"sync"
 )
 
-type Parser interface {
-	Parse(reader io.Reader, testsChan chan<- TestEntry) error
-}
-
-type OutputRenderer interface {
-	Render(testsChan <-chan TestEntry)
-}
-
 func main() {
 	args := os.Args[1:]
 	args = append([]string{"test", "-json"}, args...)
-	parser := NewDefaultParser()
-	renderer := NewDefaultOutputRenderer()
+	parser := NewParser()
+	renderer := NewRenderer()
 
 	os.Exit(run(args, parser, renderer))
 }
 
-func run(args []string, parser Parser, renderer OutputRenderer) int {
+func run(args []string, parser *Parser, renderer *Renderer) int {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -51,20 +44,22 @@ func run(args []string, parser Parser, renderer OutputRenderer) int {
 	return cmd.ProcessState.ExitCode()
 }
 
-func process(wg *sync.WaitGroup, r io.Reader, parser Parser, renderer OutputRenderer) {
+func process(wg *sync.WaitGroup, r io.Reader, parser *Parser, renderer *Renderer) {
 	defer wg.Done()
 
 	testsChan := make(chan TestEntry)
+	errChan := make(chan error)
 
 	go func() {
 		defer close(testsChan)
 
 		err := parser.Parse(r, testsChan)
 		if err != nil {
-			log.Println(err)
+			errChan <- err
+			fmt.Println(err)
 			return
 		}
 	}()
 
-	renderer.Render(testsChan)
+	renderer.Render(testsChan, errChan)
 }

@@ -2,34 +2,33 @@ package main
 
 import "bufio"
 
-type SeekScanner struct {
-	scanner        *bufio.Scanner
+type RewindScanner struct {
+	Scanner        *bufio.Scanner
 	prevLine       []byte
 	returnPrevLine bool
 }
 
-func (s *SeekScanner) Scan() bool {
-	s.returnPrevLine = false
-	s.prevLine = s.scanner.Bytes()
-	return s.scanner.Scan()
-}
-
-func (s *SeekScanner) Bytes() []byte {
+func (s *RewindScanner) Scan() bool {
 	if s.returnPrevLine {
-		return s.prevLine
+		s.returnPrevLine = false
+		return true
 	}
 
-	return s.scanner.Bytes()
+	return s.Scanner.Scan()
 }
 
-func (s *SeekScanner) Text() string {
+func (s *RewindScanner) Bytes() []byte {
+	return s.Scanner.Bytes()
+}
+
+func (s *RewindScanner) Text() string {
 	return string(s.Bytes())
 }
 
-func (s *SeekScanner) Seek() {
+func (s *RewindScanner) Rewind() {
 	s.returnPrevLine = true
 }
 
-func NewSeekScanner(scanner *bufio.Scanner) *SeekScanner {
-	return &SeekScanner{scanner: scanner}
+func NewRewindScanner(scanner *bufio.Scanner) *RewindScanner {
+	return &RewindScanner{Scanner: scanner}
 }
