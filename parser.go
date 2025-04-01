@@ -65,7 +65,9 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			testsChan <- *test
 
 		case "output":
-			test.Panicked = strings.HasPrefix(event.Output, "panic:")
+			if strings.HasPrefix(event.Output, "panic:") {
+				test.Panicked = true
+			}
 
 			switch {
 			case p.ignoreOutput(event.Output):

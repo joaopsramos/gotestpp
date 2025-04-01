@@ -71,6 +71,7 @@ Loop:
 			break Loop
 
 		default:
+			// TODO: Keep identation of diff lines
 			t.Error = append(t.Error, line)
 		}
 	}
@@ -93,8 +94,6 @@ func (t TestifyAssert) formatError() string {
 	output := []string{firstLine}
 
 	for _, line := range t.Error[1:] {
-		line = strings.TrimSpace(line)
-
 		if strings.HasPrefix(line, "-") {
 			line = color.RedString(line)
 		} else if strings.HasPrefix(line, "+") {

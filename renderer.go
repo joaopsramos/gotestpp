@@ -131,40 +131,47 @@ func (r *Renderer) formatError(t TestEntry) string {
 	outputLines := []string{}
 	reader := strings.NewReader(t.Output)
 	scanner := NewRewindScanner(bufio.NewScanner(reader))
+	panicStarted := false
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		if line == "" {
-			continue
+		if strings.HasPrefix(line, "panic:") {
+			panicStarted = true
 		}
 
-		if matches := errorFileRe.FindStringSubmatch(line); len(matches) > 0 {
-			line = "\t" + color.CyanString(matches[1]) + color.RedString(matches[2])
-			outputLines = append(outputLines, line)
+		switch {
+		case line == "":
 			continue
-		}
 
-		if IsTestifyAssert(line) {
+		case IsTestifyAssert(line):
 			nonTrimmed := scanner.Text()
 			testifyAssert := NewTestifyAssert(nonTrimmed, scanner)
 			outputLines = append(outputLines, testifyAssert.String())
-			continue
-		}
 
-		if t.Panicked && panicFileRe.MatchString(line) {
-			line = "\t" + line
-		}
+		case t.Panicked && panicStarted:
+			if panicFileRe.MatchString(line) {
+				line = "\t" + line
+			}
+			outputLines = append(outputLines, color.RedString(line))
 
-		line = "\t\t" + color.RedString(line)
-		outputLines = append(outputLines, line)
+		default:
+			if matches := errorFileRe.FindStringSubmatch(line); len(matches) > 0 {
+				line = "\t" + color.CyanString(matches[1]) + color.RedString(matches[2])
+				outputLines = append(outputLines, line)
+				continue
+			}
+
+			line = "\t\t" + color.RedString(line)
+			outputLines = append(outputLines, line)
+		}
 	}
 
 	var output string
 	failedSubTests := t.FilterSubTestsByAction("fail")
 
 	output += r.formatLogs(t)
-	output += red.Sprintf("%s %s (%.2fs)\n", "--- FAIL", t.Name, t.Elapsed)
+	output += fmt.Sprintf("%s %s (%.2fs)\n", color.RedString("--- FAIL"), t.Name, t.Elapsed)
 
 	if len(outputLines) > 0 {
 		output += fmt.Sprintf("%s\n", strings.Join(outputLines, "\n"))
