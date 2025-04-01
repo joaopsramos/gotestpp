@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -52,13 +51,9 @@ func process(wg *sync.WaitGroup, r io.Reader, parser *Parser, renderer *Renderer
 
 	go func() {
 		defer close(testsChan)
+		defer close(errChan)
 
-		err := parser.Parse(r, testsChan)
-		if err != nil {
-			errChan <- err
-			fmt.Println(err)
-			return
-		}
+		parser.Parse(r, testsChan, errChan)
 	}()
 
 	renderer.Render(testsChan, errChan)

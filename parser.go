@@ -16,7 +16,7 @@ type Parser struct {
 	subTestsMap map[string][]*TestEntry
 }
 
-func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry) error {
+func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- error) {
 	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
@@ -24,7 +24,8 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry) error {
 		line := scanner.Bytes()
 		err := json.Unmarshal(line, &event)
 		if err != nil {
-			return errors.New(string(line))
+			errsChan <- errors.New(string(line))
+			continue
 		}
 
 		if slices.Contains(actionsToIgnore, event.Action) {
