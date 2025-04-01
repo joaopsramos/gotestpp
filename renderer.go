@@ -162,22 +162,15 @@ func (r *Renderer) formatError(t TestEntry) string {
 	var output string
 	failedSubTests := t.FilterSubTestsByAction("fail")
 
-	if len(outputLines) > 0 {
-		logs := r.formatLogs(t)
-		if logs != "" {
-			output += logs + "\n"
-		}
-		output += fmt.Sprintf(
-			"%s %s (%.2fs)\n%s\n",
-			color.RedString("--- FAIL"),
-			t.Name,
-			t.Elapsed,
-			strings.Join(outputLines, "\n"),
-		)
+	output += r.formatLogs(t)
+	output += red.Sprintf("%s %s (%.2fs)\n", "--- FAIL", t.Name, t.Elapsed)
 
-		if len(failedSubTests) > 0 {
-			output += "\n"
-		}
+	if len(outputLines) > 0 {
+		output += fmt.Sprintf("%s\n", strings.Join(outputLines, "\n"))
+	}
+
+	if len(failedSubTests) > 0 && len(outputLines) > 0 {
+		output += "\n"
 	}
 
 	subTestsOutput := make([]string, len(failedSubTests))
@@ -193,7 +186,7 @@ func (r *Renderer) formatError(t TestEntry) string {
 func (r Renderer) formatLogs(t TestEntry) string {
 	var output string
 	for _, log := range t.Logs {
-		output += fmt.Sprintf("%s %s", color.BlueString("Log:"), strings.TrimSpace(log))
+		output += fmt.Sprintf("%s %s\n", color.BlueString("Log:"), strings.TrimSpace(log))
 	}
 
 	return output
