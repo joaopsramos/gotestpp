@@ -22,13 +22,15 @@ func IsTestifyAssert(line string) bool {
 func NewTestifyAssert(firstLine string, scanner *RewindScanner) TestifyAssert {
 	t := TestifyAssert{Trace: []string{firstLine}}
 	isErrorTrace := true
+	errorStarted := false
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		if strings.HasPrefix(line, "Error:") {
+		if strings.HasPrefix(line, "Error:") && !errorStarted {
 			line = strings.TrimPrefix(line, "Error:")
 			isErrorTrace = false
+			errorStarted = true
 		}
 
 		if isErrorTrace {
@@ -61,11 +63,17 @@ func NewTestifyAssert(firstLine string, scanner *RewindScanner) TestifyAssert {
 }
 
 func (t TestifyAssert) String() string {
-	return fmt.Sprintf("%s\n%s", t.formatError(), t.formatTrace())
+	output := t.formatError()
+	if t.Message != "" {
+		output += "\n\tMessages: " + t.Message
+	}
+	output += "\n" + t.formatTrace()
+
+	return output
 }
 
 func (t TestifyAssert) formatError() string {
-	firstLine := color.RedString(t.Error[0])
+	firstLine := color.RedString(strings.TrimSpace(t.Error[0]))
 	output := []string{firstLine}
 
 	for _, line := range t.Error[1:] {
@@ -80,7 +88,7 @@ func (t TestifyAssert) formatError() string {
 		output = append(output, line)
 	}
 
-	return fmt.Sprintf("\t%s\n\t%s", "Error:", strings.Join(output, "\n\t\t"))
+	return fmt.Sprintf("\t%s\n\t\t%s", "Error:", strings.Join(output, "\n\t\t"))
 }
 
 func (t TestifyAssert) formatTrace() string {

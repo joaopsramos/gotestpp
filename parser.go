@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const TEST2JSON_OUT_BUFFER = 1024
+
 var actionsToIgnore = []string{"run", "start", "pause", "cont"}
 
 type Parser struct {
@@ -18,6 +20,7 @@ type Parser struct {
 
 func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- error) {
 	scanner := bufio.NewScanner(r)
+	prevOutputLen := 0
 
 	for scanner.Scan() {
 		var event TestEvent
@@ -51,8 +54,8 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			}
 
 			test.PkgHasErrors = event.Action == "fail"
-			key := test.RootTestName()
 
+			key := test.RootTestName()
 			if test.IsSubTest() {
 				p.subTestsMap[key] = append(p.subTestsMap[key], test)
 				continue
@@ -62,54 +65,52 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			testsChan <- *test
 
 		case "output":
-			trimmed := strings.TrimSpace(event.Output)
-
-			if p.ignoreOutput(trimmed) {
+			if p.ignoreOutput(event.Output) {
 				continue
 			}
 
-			if strings.HasPrefix(trimmed, "?") {
+			if strings.HasPrefix(event.Output, "?") {
 				test.NoTestFiles = true
 				continue
 			}
 
-			if strings.HasPrefix(trimmed, "ok") {
-				test.Cached = strings.Contains(trimmed, "(cached)")
+			if strings.HasPrefix(event.Output, "ok") {
+				test.Cached = strings.Contains(event.Output, "(cached)")
 				continue
 			}
 
-			if strings.HasPrefix(trimmed, "FAIL") {
-				test.BuildFailed = strings.Contains(trimmed, "[build failed]")
+			if strings.HasPrefix(event.Output, "FAIL") {
+				test.BuildFailed = strings.Contains(event.Output, "[build failed]")
 				continue
 			}
 
-			if strings.HasPrefix(trimmed, "panic:") {
+			if strings.HasPrefix(event.Output, "panic:") {
 				test.Panicked = true
 			}
 
 			if test.Panicked ||
 				strings.HasPrefix(event.Output, " ") ||
 				strings.HasPrefix(event.Output, "\t") ||
-				strings.HasPrefix(trimmed, "--- SKIP") {
+				strings.HasPrefix(event.Output, "--- SKIP") ||
+				prevOutputLen >= TEST2JSON_OUT_BUFFER {
 
 				test.Output += event.Output
+				prevOutputLen = len(event.Output)
 				continue
 			}
 
-			// Everything else is a log
+			// Anything else is a log
 			test.Logs = append(test.Logs, event.Output)
 
 		default:
 			continue
 		}
 	}
-
-	return nil
 }
 
-func (p *Parser) ignoreOutput(trimmedOutput string) bool {
+func (p *Parser) ignoreOutput(output string) bool {
 	for _, prefix := range []string{"===", "--- FAIL", "--- PASS", "PASS"} {
-		if strings.HasPrefix(trimmedOutput, prefix) {
+		if strings.HasPrefix(output, prefix) {
 			return true
 		}
 	}
