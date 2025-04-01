@@ -96,6 +96,7 @@ func (r *Renderer) handleSkip(t TestEntry) {
 		return
 	}
 
+	r.summary.Elapsed += t.Elapsed
 	r.summary.Skipped++
 
 	file := strings.TrimSpace(strings.Split(t.Output, "\n")[0])

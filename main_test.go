@@ -35,6 +35,8 @@ func Test_process(t *testing.T) {
 		{"testify fail with message", "testify_fail_message.txt", testifyFailMessageOutput},
 		{"fail and subtest fail", "fail_and_subtest_fail.txt", failAndSubTestFailOutput},
 		{"fail with logs", "fail_with_logs.txt", failWithLogsOutput},
+		{"fail with skip", "fail_with_skip.txt", failWithSkipOutput},
+		{"multiple failures", "multiple_fails.txt", multipleFailsOutput},
 		{"panic", "panic.txt", panicOutput},
 		{"panic after assert", "panic_after_assert.txt", panicAfterAssertOutput},
 	}
@@ -154,9 +156,9 @@ Finished in 0.02s
 	testifyFailOutput = `?	github.com/joaopsramos/fincon/cmd/fincon	[no test files]
 ?	github.com/joaopsramos/fincon/cmd/migrate_db	[no test files]
 ?	github.com/joaopsramos/fincon/cmd/setup_db	[no test files]
-?	github.com/joaopsramos/fincon/internal/config	[no test files]
-?	github.com/joaopsramos/fincon/internal/error	[no test files]
 ?	github.com/joaopsramos/fincon/internal/domain	[no test files]
+?	github.com/joaopsramos/fincon/internal/error	[no test files]
+?	github.com/joaopsramos/fincon/internal/config	[no test files]
 ok	github.com/joaopsramos/fincon/internal/repository	(cached)
 ok	github.com/joaopsramos/fincon/internal/api	(cached)
 ?	github.com/joaopsramos/fincon/internal/testhelper	[no test files]
@@ -164,7 +166,8 @@ ok	github.com/joaopsramos/fincon/internal/api	(cached)
 FAIL	github.com/joaopsramos/fincon/internal/service
 
 --- FAIL TestPostgresExpense_GetSummary (0.01s)
-	expense_test.go:33:
+--- FAIL TestPostgresExpense_GetSummary/should_handle_next_month_with_carried_over_excesses (0.00s)
+	expense_test.go:97:
 	Error:
 		Not equal:
 		expected: "\tone\ntwo\nthree\n\tfour"
@@ -180,18 +183,19 @@ FAIL	github.com/joaopsramos/fincon/internal/service
 		-three
 			four
 	Error Trace:
-		/home/joao/www/fincon/backend/internal/service/expense_test.go:33
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:97
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:199
 
 Finished in 0.02s
-103 tests, 1 failed
+100 tests, 2 failed
 `
 
 	testifyFailMessageOutput = `?	github.com/joaopsramos/fincon/cmd/fincon	[no test files]
 ?	github.com/joaopsramos/fincon/cmd/migrate_db	[no test files]
 ?	github.com/joaopsramos/fincon/cmd/setup_db	[no test files]
 ?	github.com/joaopsramos/fincon/internal/config	[no test files]
-?	github.com/joaopsramos/fincon/internal/domain	[no test files]
 ?	github.com/joaopsramos/fincon/internal/error	[no test files]
+?	github.com/joaopsramos/fincon/internal/domain	[no test files]
 ok	github.com/joaopsramos/fincon/internal/repository	(cached)
 ok	github.com/joaopsramos/fincon/internal/api	(cached)
 ?	github.com/joaopsramos/fincon/internal/testhelper	[no test files]
@@ -199,7 +203,7 @@ ok	github.com/joaopsramos/fincon/internal/api	(cached)
 FAIL	github.com/joaopsramos/fincon/internal/service
 
 --- FAIL TestExpenseService_Create (0.01s)
-	expense_test.go:205:
+	expense_test.go:213:
 	Error:
 		Not equal:
 		expected: "one\ntwo\nthree\nfour"
@@ -215,9 +219,11 @@ FAIL	github.com/joaopsramos/fincon/internal/service
 		 four
 		+two
 	Messages:
-		Some message here
+		Some strange
+			message
+		here
 	Error Trace:
-		/home/joao/www/fincon/backend/internal/service/expense_test.go:205
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:213
 
 Finished in 0.02s
 103 tests, 1 failed
@@ -265,6 +271,99 @@ Log: 2025/03/31 14:59:44 log using log.Println
 
 Finished in 0.02s
 103 tests, 2 failed
+`
+
+	failWithSkipOutput = `?	github.com/joaopsramos/fincon/cmd/fincon	[no test files]
+?	github.com/joaopsramos/fincon/cmd/migrate_db	[no test files]
+?	github.com/joaopsramos/fincon/cmd/setup_db	[no test files]
+?	github.com/joaopsramos/fincon/internal/config	[no test files]
+?	github.com/joaopsramos/fincon/internal/domain	[no test files]
+?	github.com/joaopsramos/fincon/internal/error	[no test files]
+ok	github.com/joaopsramos/fincon/internal/repository	(cached)
+ok	github.com/joaopsramos/fincon/internal/api	(cached)
+?	github.com/joaopsramos/fincon/internal/testhelper	[no test files]
+?	github.com/joaopsramos/fincon/internal/util	[no test files]
+FAIL	github.com/joaopsramos/fincon/internal/service
+
+--- SKIP TestExpenseService_Create (0.00s)
+	expense_test.go:205
+
+--- FAIL TestPostgresExpense_GetSummary (0.01s)
+	expense_test.go:201:
+	Error:
+		Not equal:
+		expected: 1
+		actual  : 2
+	Error Trace:
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:201
+
+Finished in 0.02s
+102 tests, 1 failed, 1 skipped
+`
+
+	multipleFailsOutput = `?	github.com/joaopsramos/fincon/cmd/fincon	[no test files]
+?	github.com/joaopsramos/fincon/cmd/migrate_db	[no test files]
+?	github.com/joaopsramos/fincon/cmd/setup_db	[no test files]
+?	github.com/joaopsramos/fincon/internal/config	[no test files]
+?	github.com/joaopsramos/fincon/internal/domain	[no test files]
+?	github.com/joaopsramos/fincon/internal/error	[no test files]
+ok	github.com/joaopsramos/fincon/internal/repository	(cached)
+ok	github.com/joaopsramos/fincon/internal/api	(cached)
+?	github.com/joaopsramos/fincon/internal/testhelper	[no test files]
+?	github.com/joaopsramos/fincon/internal/util	[no test files]
+FAIL	github.com/joaopsramos/fincon/internal/service
+
+--- FAIL TestExpenseService_Create (0.01s)
+	expense_test.go:213:
+	Error:
+		Not equal:
+		expected: "one\ntwo\nthree\nfour"
+		actual  : "one\nthree\nfour\ntwo"
+		
+		Diff:
+		--- Expected
+		+++ Actual
+		@@ -1,4 +1,4 @@
+		 one
+		-two
+		 three
+		 four
+		+two
+	Messages:
+		Some message
+	Error Trace:
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:213
+	expense_test.go:214:
+	Error:
+		Not equal:
+		expected: "another"
+		actual  : "assert"
+		
+		Diff:
+		--- Expected
+		+++ Actual
+		@@ -1 +1 @@
+		-another
+		+assert
+	Error Trace:
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:214
+	expense_test.go:215:
+	Error:
+		Not equal:
+		expected: "one"
+		actual  : "more"
+		
+		Diff:
+		--- Expected
+		+++ Actual
+		@@ -1 +1 @@
+		-one
+		+more
+	Error Trace:
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:215
+
+Finished in 0.02s
+103 tests, 1 failed
 `
 
 	panicOutput = `?	github.com/joaopsramos/fincon/cmd/fincon	[no test files]

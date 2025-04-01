@@ -33,15 +33,6 @@ func (t TestEntry) IsPkg() bool {
 	return t.Name == ""
 }
 
-func (t TestEntry) TotalElapsed() float64 {
-	sum := t.Elapsed
-	for _, tt := range t.SubTests {
-		sum += tt.Elapsed
-	}
-
-	return sum
-}
-
 func (t *TestEntry) FilterSubTestsByAction(action string) []TestEntry {
 	result := []TestEntry{}
 	for _, tt := range t.SubTests {

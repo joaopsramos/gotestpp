@@ -101,6 +101,8 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			continue
 		}
 	}
+
+	// TODO: Send remaining entries to the channel, currently, outputs like benchmarks are lost.
 }
 
 func (p *Parser) ignoreOutput(output string) bool {
