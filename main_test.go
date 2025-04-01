@@ -155,32 +155,32 @@ Finished in 0.02s
 ?	github.com/joaopsramos/fincon/cmd/migrate_db	[no test files]
 ?	github.com/joaopsramos/fincon/cmd/setup_db	[no test files]
 ?	github.com/joaopsramos/fincon/internal/config	[no test files]
-?	github.com/joaopsramos/fincon/internal/domain	[no test files]
 ?	github.com/joaopsramos/fincon/internal/error	[no test files]
+?	github.com/joaopsramos/fincon/internal/domain	[no test files]
 ok	github.com/joaopsramos/fincon/internal/repository	(cached)
 ok	github.com/joaopsramos/fincon/internal/api	(cached)
 ?	github.com/joaopsramos/fincon/internal/testhelper	[no test files]
 ?	github.com/joaopsramos/fincon/internal/util	[no test files]
 FAIL	github.com/joaopsramos/fincon/internal/service
 
---- FAIL TestExpenseService_Create (0.01s)
-	expense_test.go:205:
+--- FAIL TestPostgresExpense_GetSummary (0.01s)
+	expense_test.go:33:
 	Error:
 		Not equal:
-		expected: "one\ntwo\nthree\nfour"
-		actual  : "one\nthree\nfour\ntwo"
+		expected: "\tone\ntwo\nthree\n\tfour"
+		actual  : "\tone\nthree\ntwo\n\tfour"
 		
 		Diff:
 		--- Expected
 		+++ Actual
 		@@ -1,4 +1,4 @@
-		one
-		-two
-		three
-		four
-		+two
+			one
+		+three
+		 two
+		-three
+			four
 	Error Trace:
-		/home/joao/www/fincon/backend/internal/service/expense_test.go:205
+		/home/joao/www/fincon/backend/internal/service/expense_test.go:33
 
 Finished in 0.02s
 103 tests, 1 failed
@@ -209,10 +209,10 @@ FAIL	github.com/joaopsramos/fincon/internal/service
 		--- Expected
 		+++ Actual
 		@@ -1,4 +1,4 @@
-		one
+		 one
 		-two
-		three
-		four
+		 three
+		 four
 		+two
 	Messages:
 		Some message here

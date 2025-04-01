@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/joaopsramos/gotestpp/utils"
 )
 
 type TestifyAssert struct {
@@ -22,57 +23,52 @@ func IsTestifyAssert(line string) bool {
 func NewTestifyAssert(firstLine string, scanner *RewindScanner) TestifyAssert {
 	t := TestifyAssert{Trace: []string{strings.TrimSpace(firstLine)}}
 	isErrorTrace := true
-	errorStarted := false
-	messageStarted := false
+	isError := false
+	isMessage := false
+
+	firstLineIdentation := utils.CountSpacesAndTabs(firstLine)
 
 Loop:
 	for scanner.Scan() {
-		nonTrimmed := scanner.Text()
-		line := strings.TrimSpace(nonTrimmed)
-
-		if strings.HasPrefix(line, "Error:") && !errorStarted {
-			isErrorTrace = false
-			errorStarted = true
-			line = strings.TrimPrefix(line, "Error:")
-			t.Error = append(t.Error, strings.TrimSpace(line))
-			continue
-		}
-
-		if strings.HasPrefix(line, "Messages:") && !messageStarted {
-			messageStarted = true
-			line = strings.TrimPrefix(line, "Messages:")
-			t.Message = append(t.Message, strings.TrimSpace(line))
-			continue
-		}
+		originalLine := scanner.Text()
+		line := strings.TrimSpace(originalLine)
+		identation := utils.CountSpacesAndTabs(originalLine)
+		sameIdentation := identation == firstLineIdentation
 
 		switch {
+		case sameIdentation && strings.HasPrefix(line, "Error:"):
+			isErrorTrace = false
+			isError = true
+			t.Error = append(t.Error, originalLine)
+
+		case sameIdentation && strings.HasPrefix(line, "Messages:"):
+			isError = false
+			isMessage = true
+			t.Message = append(t.Message, originalLine)
+
 		case isErrorTrace:
 			t.Trace = append(t.Trace, line)
 
 		case strings.HasPrefix(line, "Test:"):
+			isError = false
 			t.Test = line
 
-		case messageStarted &&
-			errorFileRe.Match(scanner.Bytes()) &&
-			// Current line identation is lte than first line
-			t.countSpaces(nonTrimmed) <= t.countSpaces(firstLine):
+		case isError:
+			t.Error = append(t.Error, originalLine)
 
+		case isMessage && identation <= utils.CountSpacesAndTabs(firstLine):
 			// Message has ended, but we already read the next line, so we need to rewind the scanner.
 			scanner.Rewind()
 			break Loop
 
-		case messageStarted:
-			t.Message = append(t.Message, line)
+		case isMessage:
+			t.Message = append(t.Message, originalLine)
 
-		case t.Test != "" && !messageStarted:
+		case t.Test != "" && !isMessage:
 			// The testify output has ended with no message, but we already read the next line,
 			// so we need to rewind the scanner.
 			scanner.Rewind()
 			break Loop
-
-		default:
-			// TODO: Keep identation of diff lines
-			t.Error = append(t.Error, line)
 		}
 	}
 
@@ -81,22 +77,42 @@ Loop:
 
 func (t TestifyAssert) String() string {
 	output := t.formatError()
-	if len(t.Message) > 0 {
-		output += fmt.Sprintf("\n\tMessages:\n\t\t%s", strings.Join(t.Message, "\n\t\t"))
-	}
+	output += t.formatMessages()
 	output += "\n" + t.formatTrace()
 
 	return output
 }
 
 func (t TestifyAssert) formatError() string {
-	firstLine := color.RedString(t.Error[0])
-	output := []string{firstLine}
+	output := make([]string, 0, len(t.Error))
+
+	// Replace to get the correct identation count
+	firstLine := strings.Replace(t.Error[0], "Error:", "      ", 1)
+	baseIdentation := utils.CountSpacesAndTabs(firstLine)
+
+	output = append(output, color.RedString(strings.TrimSpace(firstLine)))
 
 	for _, line := range t.Error[1:] {
-		if strings.HasPrefix(line, "-") {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "" {
+			output = append(output, "")
+			continue
+		}
+
+		identation := utils.CountSpacesAndTabs(line)
+		sameIdentation := identation == baseIdentation
+
+		line = utils.StripExtraSpacesAndTabs(line)
+
+		if identation == baseIdentation+1 {
+			// We removed a space that was part of the Diff context (without -/+ signs)
+			line = " " + line
+		}
+
+		if sameIdentation && strings.HasPrefix(trimmed, "-") {
 			line = color.RedString(line)
-		} else if strings.HasPrefix(line, "+") {
+		} else if sameIdentation && strings.HasPrefix(trimmed, "+") {
 			line = color.GreenString(line)
 		}
 
@@ -106,31 +122,24 @@ func (t TestifyAssert) formatError() string {
 	return fmt.Sprintf("\t%s\n\t\t%s", "Error:", strings.Join(output, "\n\t\t"))
 }
 
-func (t TestifyAssert) formatTrace() string {
-	var output []string
-	for _, line := range t.Trace {
-		line = strings.TrimSpace(line)
-		line = strings.Replace(line, "Error Trace:", "", 1)
+func (t TestifyAssert) formatMessages() string {
+	if len(t.Message) == 0 {
+		return ""
+	}
 
+	output := make([]string, 0, len(t.Message))
+
+	t.Message[0] = strings.Replace(t.Message[0], "Messages:", "         ", 1)
+	for _, line := range t.Message {
+		line = utils.StripExtraSpacesAndTabs(line)
 		output = append(output, line)
 	}
 
-	return fmt.Sprintf("\t%s\n\t%s", "Error Trace:", strings.Join(output, "\n\t\t"))
+	return fmt.Sprintf("\n\tMessages:\n\t\t%s", strings.Join(output, "\n\t\t"))
 }
 
-func (t TestifyAssert) countSpaces(s string) int {
-	count := 0
-Loop:
-	for _, c := range s {
-		switch c {
-		case ' ':
-			count++
-		case '\t':
-			count += 4
-		default:
-			break Loop
-		}
-	}
+func (t TestifyAssert) formatTrace() string {
+	t.Trace[0] = strings.Replace(t.Trace[0], "Error Trace:", "", 1)
 
-	return count
+	return fmt.Sprintf("\t%s\n\t%s", "Error Trace:", strings.Join(t.Trace, "\n\t\t"))
 }
