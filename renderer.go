@@ -146,7 +146,8 @@ func (r *Renderer) formatError(t TestEntry) string {
 		}
 
 		if IsTestifyAssert(line) {
-			testifyAssert := NewTestifyAssert(line, scanner)
+			nonTrimmed := scanner.Text()
+			testifyAssert := NewTestifyAssert(nonTrimmed, scanner)
 			outputLines = append(outputLines, testifyAssert.String())
 			continue
 		}

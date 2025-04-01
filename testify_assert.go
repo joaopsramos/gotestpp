@@ -11,7 +11,7 @@ type TestifyAssert struct {
 	Error   []string
 	Trace   []string
 	Test    string
-	Message string
+	Message []string
 }
 
 func IsTestifyAssert(line string) bool {
@@ -20,43 +20,59 @@ func IsTestifyAssert(line string) bool {
 }
 
 func NewTestifyAssert(firstLine string, scanner *RewindScanner) TestifyAssert {
-	t := TestifyAssert{Trace: []string{firstLine}}
+	t := TestifyAssert{Trace: []string{strings.TrimSpace(firstLine)}}
 	isErrorTrace := true
 	errorStarted := false
+	messageStarted := false
 
+Loop:
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		nonTrimmed := scanner.Text()
+		line := strings.TrimSpace(nonTrimmed)
 
 		if strings.HasPrefix(line, "Error:") && !errorStarted {
-			line = strings.TrimPrefix(line, "Error:")
 			isErrorTrace = false
 			errorStarted = true
-		}
-
-		if isErrorTrace {
-			t.Trace = append(t.Trace, line)
+			line = strings.TrimPrefix(line, "Error:")
+			t.Error = append(t.Error, strings.TrimSpace(line))
 			continue
 		}
 
-		if strings.HasPrefix(line, "Test:") {
-			t.Test = line
-			continue
-		}
-
-		if strings.HasPrefix(line, "Messages:") {
+		if strings.HasPrefix(line, "Messages:") && !messageStarted {
+			messageStarted = true
 			line = strings.TrimPrefix(line, "Messages:")
-			t.Message = strings.TrimSpace(line)
-			break
+			t.Message = append(t.Message, strings.TrimSpace(line))
+			continue
 		}
 
-		if t.Test != "" {
-			// the testify output has ended, but we read an extra line,
+		switch {
+		case isErrorTrace:
+			t.Trace = append(t.Trace, line)
+
+		case strings.HasPrefix(line, "Test:"):
+			t.Test = line
+
+		case messageStarted &&
+			errorFileRe.Match(scanner.Bytes()) &&
+			// Current line identation is lte than first line
+			t.countSpaces(nonTrimmed) <= t.countSpaces(firstLine):
+
+			// Message has ended, but we already read the next line, so we need to rewind the scanner.
+			scanner.Rewind()
+			break Loop
+
+		case messageStarted:
+			t.Message = append(t.Message, line)
+
+		case t.Test != "" && !messageStarted:
+			// The testify output has ended with no message, but we already read the next line,
 			// so we need to rewind the scanner.
 			scanner.Rewind()
-			break
-		}
+			break Loop
 
-		t.Error = append(t.Error, line)
+		default:
+			t.Error = append(t.Error, line)
+		}
 	}
 
 	return t
@@ -64,8 +80,8 @@ func NewTestifyAssert(firstLine string, scanner *RewindScanner) TestifyAssert {
 
 func (t TestifyAssert) String() string {
 	output := t.formatError()
-	if t.Message != "" {
-		output += "\n\tMessages: " + t.Message
+	if len(t.Message) > 0 {
+		output += fmt.Sprintf("\n\tMessages:\n\t\t%s", strings.Join(t.Message, "\n\t\t"))
 	}
 	output += "\n" + t.formatTrace()
 
@@ -73,7 +89,7 @@ func (t TestifyAssert) String() string {
 }
 
 func (t TestifyAssert) formatError() string {
-	firstLine := color.RedString(strings.TrimSpace(t.Error[0]))
+	firstLine := color.RedString(t.Error[0])
 	output := []string{firstLine}
 
 	for _, line := range t.Error[1:] {
@@ -101,4 +117,21 @@ func (t TestifyAssert) formatTrace() string {
 	}
 
 	return fmt.Sprintf("\t%s\n\t%s", "Error Trace:", strings.Join(output, "\n\t\t"))
+}
+
+func (t TestifyAssert) countSpaces(s string) int {
+	count := 0
+Loop:
+	for _, c := range s {
+		switch c {
+		case ' ':
+			count++
+		case '\t':
+			count += 4
+		default:
+			break Loop
+		}
+	}
+
+	return count
 }
