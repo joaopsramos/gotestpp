@@ -56,8 +56,6 @@ func Test_process(t *testing.T) {
 			a.Equal(tt.want, output)
 		})
 	}
-
-	os.Stdout = originalStdout
 }
 
 var (
@@ -214,7 +212,8 @@ FAIL	github.com/joaopsramos/fincon/internal/service
 		three
 		four
 		+two
-	Messages: Some message here
+	Messages:
+		Some message here
 	Error Trace:
 		/home/joao/www/fincon/backend/internal/service/expense_test.go:205
 

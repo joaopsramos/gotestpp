@@ -65,42 +65,35 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			testsChan <- *test
 
 		case "output":
-			if p.ignoreOutput(event.Output) {
-				continue
-			}
+			test.Panicked = strings.HasPrefix(event.Output, "panic:")
 
-			if strings.HasPrefix(event.Output, "?") {
+			switch {
+			case p.ignoreOutput(event.Output):
+				continue
+
+			case strings.HasPrefix(event.Output, "?"):
 				test.NoTestFiles = true
-				continue
-			}
 
-			if strings.HasPrefix(event.Output, "ok") {
+			case strings.HasPrefix(event.Output, "ok"):
 				test.Cached = strings.Contains(event.Output, "(cached)")
-				continue
-			}
 
-			if strings.HasPrefix(event.Output, "FAIL") {
+			case strings.HasPrefix(event.Output, "FAIL"):
 				test.BuildFailed = strings.Contains(event.Output, "[build failed]")
-				continue
-			}
 
-			if strings.HasPrefix(event.Output, "panic:") {
-				test.Panicked = true
-			}
-
-			if test.Panicked ||
+			case test.Panicked ||
 				strings.HasPrefix(event.Output, " ") ||
 				strings.HasPrefix(event.Output, "\t") ||
 				strings.HasPrefix(event.Output, "--- SKIP") ||
-				prevOutputLen >= TEST2JSON_OUT_BUFFER {
+				// The current line is a continuation of the previous output that was split due to buffer limits
+				prevOutputLen >= TEST2JSON_OUT_BUFFER:
 
 				test.Output += event.Output
 				prevOutputLen = len(event.Output)
-				continue
-			}
 
-			// Anything else is a log
-			test.Logs = append(test.Logs, event.Output)
+			default:
+				// Anything else is a log
+				test.Logs = append(test.Logs, event.Output)
+			}
 
 		default:
 			continue
