@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const TEST2JSON_OUT_BUFFER = 1024
+const test2jsonOutBuffer = 1024
 
 var actionsToIgnore = []string{"run", "start", "pause", "cont"}
 
