@@ -13,8 +13,12 @@ type Summary struct {
 	Elapsed float64
 }
 
+func (s Summary) Total() int {
+	return s.Passed + s.Skipped + s.Failed
+}
+
 func (s Summary) String() string {
-	output := fmt.Sprintf("%d tests", s.Passed+s.Failed+s.Skipped)
+	output := fmt.Sprintf("%d tests", s.Total())
 
 	if s.Failed > 0 {
 		output = red.Sprintf("%s, %d failed", output, s.Failed)

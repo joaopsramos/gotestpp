@@ -203,7 +203,13 @@ func (r Renderer) printFailures() {
 }
 
 func (r Renderer) printErrors() {
+	var blankLine string
+
 	if len(r.errors) > 0 {
-		fmt.Printf("\n%s\n%s\n", color.RedString("Errors:"), strings.Join(r.errors, "\n"))
+		if r.summary.Total() > 0 {
+			blankLine = "\n"
+		}
+
+		fmt.Printf("%s%s\n%s\n", blankLine, color.RedString("Errors:"), strings.Join(r.errors, "\n"))
 	}
 }
