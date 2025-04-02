@@ -264,10 +264,10 @@ ok	github.com/joaopsramos/fincon/internal/repository	(cached)
 FAIL	github.com/joaopsramos/fincon/internal/service
 
 --- FAIL TestExpenseService_Create (0.01s)
-Log: log using fmt.Println
-Log: 2025/03/31 14:59:44 log using log.Println
 --- FAIL TestExpenseService_Create/handle_float_precision_edge_cases (0.00s)
 	expense_test.go:231: error to trigger log
+log using fmt.Println
+2025/03/31 14:59:44 log using log.Println
 
 Finished in 0.02s
 103 tests, 2 failed
@@ -413,7 +413,7 @@ FAIL	github.com/joaopsramos/fincon/internal/service
 
 --- FAIL TestPostgresExpense_GetSummary (0.01s)
 	expense_test.go:33: Add(1,2) = 2;
-		want 2000
+        want 2000
 panic: something went really wrong [recovered]
 panic: something went really wrong
 goroutine 20 [running]:

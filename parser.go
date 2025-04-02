@@ -20,8 +20,6 @@ type Parser struct {
 
 func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- error) {
 	scanner := bufio.NewScanner(r)
-	prevOutputLen := 0
-
 	for scanner.Scan() {
 		var event TestEvent
 		line := scanner.Bytes()
@@ -82,19 +80,8 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			case strings.HasPrefix(event.Output, "FAIL"):
 				test.BuildFailed = strings.Contains(event.Output, "[build failed]")
 
-			case test.Panicked ||
-				strings.HasPrefix(event.Output, " ") ||
-				strings.HasPrefix(event.Output, "\t") ||
-				strings.HasPrefix(event.Output, "--- SKIP") ||
-				// The current line is a continuation of the previous output that was split due to buffer limits
-				prevOutputLen >= TEST2JSON_OUT_BUFFER:
-
-				test.Output += event.Output
-				prevOutputLen = len(event.Output)
-
 			default:
-				// Anything else is a log
-				test.Logs = append(test.Logs, event.Output)
+				test.Output += event.Output
 			}
 
 		default:
@@ -106,7 +93,7 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 }
 
 func (p *Parser) ignoreOutput(output string) bool {
-	for _, prefix := range []string{"===", "--- FAIL", "--- PASS", "PASS"} {
+	for _, prefix := range []string{"===", "--- PASS", "--- SKIP", "--- FAIL", "PASS"} {
 		if strings.HasPrefix(output, prefix) {
 			return true
 		}

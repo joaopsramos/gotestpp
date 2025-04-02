@@ -11,7 +11,6 @@ type TestEntry struct {
 	Action       string
 	Output       string
 	SubTests     []TestEntry
-	Logs         []string
 	NoTestFiles  bool
 	PkgFinished  bool
 	PkgHasErrors bool

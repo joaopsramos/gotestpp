@@ -99,12 +99,9 @@ func (r *Renderer) handleSkip(t TestEntry) {
 	r.summary.Elapsed += t.Elapsed
 	r.summary.Skipped++
 
-	file := strings.TrimSpace(strings.Split(t.Output, "\n")[0])
-
+	file := strings.TrimSpace(t.Output)
 	output := yellow.Sprintf("%s %s (%.2fs)\n", "--- SKIP", t.Name, t.Elapsed)
-	if file != "" {
-		output += yellow.Sprintf("\t%s\n", strings.TrimSuffix(file, ":"))
-	}
+	output += yellow.Sprintf("\t%s\n", strings.TrimSuffix(file, ":"))
 
 	r.skippedOutputs = append(r.skippedOutputs, output)
 }
@@ -163,20 +160,17 @@ func (r *Renderer) formatError(t TestEntry) string {
 				continue
 			}
 
-			line = "\t\t" + color.RedString(line)
-			outputLines = append(outputLines, line)
+			outputLines = append(outputLines, scanner.Text())
 		}
 	}
 
-	var output string
-	failedSubTests := t.FilterSubTestsByAction("fail")
-
-	output += r.formatLogs(t)
-	output += fmt.Sprintf("%s %s (%.2fs)\n", color.RedString("--- FAIL"), t.Name, t.Elapsed)
+	output := fmt.Sprintf("%s %s (%.2fs)\n", color.RedString("--- FAIL"), t.Name, t.Elapsed)
 
 	if len(outputLines) > 0 {
 		output += fmt.Sprintf("%s\n", strings.Join(outputLines, "\n"))
 	}
+
+	failedSubTests := t.FilterSubTestsByAction("fail")
 
 	if len(failedSubTests) > 0 && len(outputLines) > 0 {
 		output += "\n"
@@ -188,15 +182,6 @@ func (r *Renderer) formatError(t TestEntry) string {
 	}
 
 	output += strings.Join(subTestsOutput, "\n")
-
-	return output
-}
-
-func (r Renderer) formatLogs(t TestEntry) string {
-	var output string
-	for _, log := range t.Logs {
-		output += fmt.Sprintf("%s %s\n", color.BlueString("Log:"), strings.TrimSpace(log))
-	}
 
 	return output
 }

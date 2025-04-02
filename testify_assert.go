@@ -26,22 +26,22 @@ func NewTestifyAssert(firstLine string, scanner *RewindScanner) TestifyAssert {
 	isError := false
 	isMessage := false
 
-	firstLineIdentation := utils.CountSpacesAndTabs(firstLine)
+	firstLineIndent := utils.CountSpacesAndTabs(firstLine)
 
 Loop:
 	for scanner.Scan() {
 		originalLine := scanner.Text()
 		line := strings.TrimSpace(originalLine)
-		identation := utils.CountSpacesAndTabs(originalLine)
-		sameIdentation := identation == firstLineIdentation
+		indent := utils.CountSpacesAndTabs(originalLine)
+		sameIndent := indent == firstLineIndent
 
 		switch {
-		case sameIdentation && strings.HasPrefix(line, "Error:"):
+		case sameIndent && strings.HasPrefix(line, "Error:"):
 			isErrorTrace = false
 			isError = true
 			t.Error = append(t.Error, originalLine)
 
-		case sameIdentation && strings.HasPrefix(line, "Messages:"):
+		case sameIndent && strings.HasPrefix(line, "Messages:"):
 			isError = false
 			isMessage = true
 			t.Message = append(t.Message, originalLine)
@@ -56,7 +56,7 @@ Loop:
 		case isError:
 			t.Error = append(t.Error, originalLine)
 
-		case isMessage && identation <= utils.CountSpacesAndTabs(firstLine):
+		case isMessage && indent <= utils.CountSpacesAndTabs(firstLine):
 			// Message has ended, but we already read the next line, so we need to rewind the scanner.
 			scanner.Rewind()
 			break Loop
@@ -86,9 +86,9 @@ func (t TestifyAssert) String() string {
 func (t TestifyAssert) formatError() string {
 	output := make([]string, 0, len(t.Error))
 
-	// Replace to get the correct identation count
+	// Replace to get the correct indentation count
 	firstLine := strings.Replace(t.Error[0], "Error:", "      ", 1)
-	baseIdentation := utils.CountSpacesAndTabs(firstLine)
+	baseIndent := utils.CountSpacesAndTabs(firstLine)
 
 	output = append(output, color.RedString(strings.TrimSpace(firstLine)))
 
@@ -100,19 +100,19 @@ func (t TestifyAssert) formatError() string {
 			continue
 		}
 
-		identation := utils.CountSpacesAndTabs(line)
-		sameIdentation := identation == baseIdentation
+		indent := utils.CountSpacesAndTabs(line)
+		sameIndent := indent == baseIndent
 
 		line = utils.StripExtraSpacesAndTabs(line)
 
-		if identation == baseIdentation+1 {
+		if indent == baseIndent+1 {
 			// We removed a space that was part of the Diff context (without -/+ signs)
 			line = " " + line
 		}
 
-		if sameIdentation && strings.HasPrefix(trimmed, "-") {
+		if sameIndent && strings.HasPrefix(trimmed, "-") {
 			line = color.RedString(line)
-		} else if sameIdentation && strings.HasPrefix(trimmed, "+") {
+		} else if sameIndent && strings.HasPrefix(trimmed, "+") {
 			line = color.GreenString(line)
 		}
 
