@@ -4,7 +4,6 @@ import "bufio"
 
 type RewindScanner struct {
 	Scanner        *bufio.Scanner
-	prevLine       []byte
 	returnPrevLine bool
 }
 
