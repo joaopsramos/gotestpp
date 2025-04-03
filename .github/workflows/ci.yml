@@ -23,3 +23,6 @@ jobs:
 
     - name: Run gotestpp
       run: ./gotestpp ./...
+
+    - name: Run with pipe
+      run: go test ./... -json | ./gotestpp

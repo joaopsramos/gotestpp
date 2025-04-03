@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/fatih/color"
@@ -43,18 +42,14 @@ func Test_process(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			parser := NewParser()
-			renderer := NewRenderer()
-
-			var wg sync.WaitGroup
-			wg.Add(1)
+			processor := NewProcessor()
 
 			file, err := os.Open(filepath.Join("testdata", tt.fileName))
 			a.NoError(err)
 			defer file.Close()
 
 			output := captureOutput(func() {
-				process(&wg, file, parser, renderer)
+				processor.Process(file)
 			})
 
 			a.Equal(tt.want, output)

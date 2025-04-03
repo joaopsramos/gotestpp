@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,6 +17,10 @@ var (
 
 	errorFileRe = regexp.MustCompile(`^([\w\s.-]+\.go:\d+:)(.*)`)
 	panicFileRe = regexp.MustCompile(`^([a-zA-Z]:\\|/)?([\w\s.-]+[/\\])*[\w\s.-]+\.go:\d+`)
+
+	ErrTestsFailed      = errors.New("one or more tests failed")
+	ErrParseFailed      = errors.New("failed to parse")
+	ErrParsedWithErrors = errors.New("parsed with errors")
 )
 
 type Renderer struct {
@@ -35,7 +40,7 @@ func NewRenderer() *Renderer {
 	return &Renderer{}
 }
 
-func (r *Renderer) Render(testsChan <-chan TestEntry, errChan <-chan error) {
+func (r *Renderer) Render(testsChan <-chan TestEntry, errChan <-chan error) error {
 Loop:
 	for {
 		select {
@@ -60,6 +65,11 @@ Loop:
 				break Loop
 			}
 
+			if len(r.errors) > 30 {
+				fmt.Println("no valid events found, if you are piping into gotestpp, go test must be run with -json flag")
+				return ErrParseFailed
+			}
+
 			r.errors = append(r.errors, err.Error())
 		}
 	}
@@ -70,6 +80,15 @@ Loop:
 	r.printErrors()
 
 	fmt.Printf("\n%s\n", r.summary)
+
+	switch {
+	case r.summary.Failed > 0:
+		return ErrTestsFailed
+	case len(r.errors) > 0:
+		return ErrParsedWithErrors
+	}
+
+	return nil
 }
 
 func (r *Renderer) handlePass(t TestEntry) {
@@ -203,13 +222,7 @@ func (r Renderer) printFailures() {
 }
 
 func (r Renderer) printErrors() {
-	var blankLine string
-
 	if len(r.errors) > 0 {
-		if r.summary.Total() > 0 {
-			blankLine = "\n"
-		}
-
-		fmt.Printf("%s%s\n%s\n", blankLine, color.RedString("Errors:"), strings.Join(r.errors, "\n"))
+		fmt.Printf("\n%s\n%s\n", color.RedString("Errors:"), strings.Join(r.errors, "\n"))
 	}
 }
