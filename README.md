@@ -48,5 +48,5 @@ gotestpp ./...
 
 ## Why another tool for this?
 
-None of the other options I am aware of modify the failed test output. As stated before,
-the main purpose of `gotestpp` is to make failures easier to understand.
+There are incredible tools that do something similar, but I wanted one that makes failures easier to understand,
+especially by improving (in my opinion, of course) the output of Testify assertions.
