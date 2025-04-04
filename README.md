@@ -36,6 +36,15 @@ gotestpp ./...
 >
 > Even though all flags that work with go test are accepted by gotestpp, it does not yet support other outputs (such as benchmarks).
 
+You can also pipe the output to `gotestpp`:
+```sh
+go test ./... -json | gotestpp
+```
+
+> [!IMPORTANT]
+>
+> If piping `go test` output, the `-json` flag must be included.
+
 ## Output Example
 
 ### Success:
