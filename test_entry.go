@@ -5,6 +5,7 @@ import (
 )
 
 type TestEntry struct {
+	EventID      string
 	Name         string
 	Pkg          string
 	Elapsed      float64

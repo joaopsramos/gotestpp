@@ -38,6 +38,7 @@ func Test_process(t *testing.T) {
 		{"multiple failures", "multiple_fails.txt", multipleFailsOutput},
 		{"panic", "panic.txt", panicOutput},
 		{"panic after assert", "panic_after_assert.txt", panicAfterAssertOutput},
+		{"unexpected outputs", "benchmark.txt", benchmarkOutput},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -427,6 +428,26 @@ created by testing.(*T).Run in goroutine 1
 
 Finished in 0.01s
 95 tests, 1 failed
+`
+
+	benchmarkOutput = `?	github.com/joaopsramos/fincon/cmd/fincon	[no test files]
+?	github.com/joaopsramos/fincon/cmd/migrate_db	[no test files]
+?	github.com/joaopsramos/fincon/cmd/setup_db	[no test files]
+ok	github.com/joaopsramos/fincon/internal/api	0.82s
+?	github.com/joaopsramos/fincon/internal/config	[no test files]
+?	github.com/joaopsramos/fincon/internal/domain	[no test files]
+?	github.com/joaopsramos/fincon/internal/error	[no test files]
+ok	github.com/joaopsramos/fincon/internal/repository	0.02s
+ok	github.com/joaopsramos/fincon/internal/service	0.02s
+?	github.com/joaopsramos/fincon/internal/testhelper	[no test files]
+?	github.com/joaopsramos/fincon/internal/util	[no test files]
+
+Unparsed:
+BenchmarkHello
+BenchmarkHello-12    	1000000000	         0.2345 ns/op
+
+Finished in 0.85s
+103 tests
 `
 )
 

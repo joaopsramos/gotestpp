@@ -33,10 +33,11 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 			continue
 		}
 
-		test, ok := p.testsMap[event.buildID()]
+		eventID := event.buildID()
+		test, ok := p.testsMap[eventID]
 		if !ok {
-			test = &TestEntry{Name: event.Name, Pkg: event.Pkg}
-			p.testsMap[event.buildID()] = test
+			test = &TestEntry{Name: event.Name, Pkg: event.Pkg, EventID: eventID}
+			p.testsMap[eventID] = test
 		}
 
 		test.Elapsed += event.Elapsed
@@ -53,14 +54,13 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 
 			test.PkgHasErrors = event.Action == "fail"
 
-			key := test.RootTestName()
 			if test.IsSubTest() {
+				key := test.RootTestName()
 				p.subTestsMap[key] = append(p.subTestsMap[key], test)
 				continue
 			}
 
-			test.SubTests = p.getSubTests(key)
-			testsChan <- *test
+			p.sendTest(test, testsChan)
 
 		case "output":
 			if strings.HasPrefix(event.Output, "panic:") {
@@ -89,7 +89,12 @@ func (p *Parser) Parse(r io.Reader, testsChan chan<- TestEntry, errsChan chan<- 
 		}
 	}
 
-	// TODO: Send remaining entries to the channel, currently, outputs like benchmarks are lost.
+	// Send remaining events that don't have a pass/skip/fail action
+	for _, test := range p.testsMap {
+		if strings.TrimSpace(test.Output) != "" {
+			testsChan <- *test
+		}
+	}
 }
 
 func (p *Parser) ignoreOutput(output string) bool {
@@ -102,6 +107,12 @@ func (p *Parser) ignoreOutput(output string) bool {
 	return false
 }
 
+func (p *Parser) sendTest(test *TestEntry, testsChan chan<- TestEntry) {
+	test.SubTests = p.getSubTests(test.RootTestName())
+	testsChan <- *test
+	p.deleteTest(test)
+}
+
 func (p *Parser) getSubTests(key string) []TestEntry {
 	tests := make([]TestEntry, len(p.subTestsMap[key]))
 	for i, t := range p.subTestsMap[key] {
@@ -109,6 +120,14 @@ func (p *Parser) getSubTests(key string) []TestEntry {
 	}
 
 	return tests
+}
+
+func (p *Parser) deleteTest(test *TestEntry) {
+	delete(p.testsMap, test.EventID)
+
+	for _, subTest := range test.SubTests {
+		delete(p.testsMap, subTest.EventID)
+	}
 }
 
 func NewParser() *Parser {

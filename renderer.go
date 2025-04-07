@@ -24,11 +24,12 @@ var (
 )
 
 type Renderer struct {
-	summary        Summary
-	failedPkgs     []string
-	failedOutputs  []string
-	skippedOutputs []string
-	errors         []string
+	summary         Summary
+	failedPkgs      []string
+	failedOutputs   []string
+	skippedOutputs  []string
+	errors          []string
+	unparsedOutputs []string
 }
 
 type pkgLogs struct {
@@ -58,6 +59,9 @@ Loop:
 
 			case "fail":
 				r.handleFail(t)
+
+			default:
+				r.unparsedOutputs = append(r.unparsedOutputs, t.Output)
 			}
 
 		case err, ok := <-errChan:
@@ -77,6 +81,7 @@ Loop:
 	r.printFailedPkgs()
 	r.printSkipped()
 	r.printFailures()
+	r.printUnparsed()
 	r.printErrors()
 
 	fmt.Printf("\n%s\n", r.summary)
@@ -218,6 +223,12 @@ func (r Renderer) printSkipped() {
 func (r Renderer) printFailures() {
 	if len(r.failedOutputs) > 0 {
 		fmt.Print("\n" + strings.Join(r.failedOutputs, "\n"))
+	}
+}
+
+func (r Renderer) printUnparsed() {
+	if len(r.unparsedOutputs) > 0 {
+		fmt.Printf("\n%s\n%s", color.BlueString("Unparsed:"), strings.Join(r.unparsedOutputs, "\n"))
 	}
 }
 

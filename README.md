@@ -34,7 +34,7 @@ gotestpp ./...
 
 > [!NOTE]
 >
-> Even though all flags that work with go test are accepted by gotestpp, it does not yet support other outputs (such as benchmarks).
+> Even though all flags that work with `go test` are accepted by `gotestpp`, some outputs may not appear due to the way Go provides test events.
 
 You can also pipe the output to `gotestpp`:
 ```sh
